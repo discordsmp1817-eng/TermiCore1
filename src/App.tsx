@@ -4,6 +4,7 @@
  */
 
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { AppProvider, useApp } from './context/AppContext';
 import { PRODUCT_CATEGORIES } from './data/termicoreData';
 import { Header } from './components/Header';
@@ -50,10 +51,11 @@ function RouteView() {
     <AnimatePresence mode="wait">
       <motion.div
         key={route}
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -4 }}
-        transition={{ duration: 0.16, ease: INDUSTRIAL_EASE }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.14, ease: INDUSTRIAL_EASE }}
+        onAnimationComplete={() => ScrollTrigger.refresh()}
       >
         {renderPage()}
       </motion.div>
@@ -65,7 +67,7 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <AppProvider>
-        <div className="min-h-screen flex flex-col bg-white text-slate-900">
+        <div className="min-h-screen flex flex-col bg-[#F7F9FB] text-[#0F172A]">
           <Header />
           <main className="flex-1">
             <RouteView />

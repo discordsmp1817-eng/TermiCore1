@@ -1,6 +1,6 @@
 import { Mail, Phone, MapPin, Linkedin, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { CONTACT_INFO, PRODUCT_CATEGORIES, RoutePath } from '../data/termicoreData';
+import { CONTACT_INFO, IMAGES, PRODUCT_CATEGORIES, RoutePath, resolveAssetUrl } from '../data/termicoreData';
 import { useApp } from '../context/AppContext';
 import { INDUSTRIAL_EASE } from './MotionPrimitives';
 
@@ -12,7 +12,7 @@ export function Footer() {
   };
 
   return (
-    <footer className="bg-[#0F172A] text-slate-300 border-t border-slate-800">
+    <footer className="bg-[#EEF2F6] text-[#475569] border-t border-slate-200">
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 py-14 lg:py-16">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand Column */}
@@ -22,17 +22,19 @@ export function Footer() {
               onClick={() => handleLink('/')}
               className="flex items-center gap-2.5 text-left cursor-pointer rounded"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <rect x="2" y="3" width="20" height="18" rx="3" stroke="#FFFFFF" strokeWidth="2" />
-                <path d="M7 9H17M7 15H17" stroke="#38BDF8" strokeWidth="2" strokeLinecap="round" />
-                <circle cx="12" cy="9" r="1.5" fill="#FFFFFF" />
-                <circle cx="12" cy="15" r="1.5" fill="#FFFFFF" />
-              </svg>
-              <span className="font-display text-lg font-bold tracking-tight text-white">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white p-0.5 shadow-2xs">
+                <img
+                  src={resolveAssetUrl(IMAGES.logo)}
+                  alt="TermiCore logo"
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-contain"
+                />
+              </span>
+              <span className="font-display text-lg font-bold tracking-tight text-[#0F172A]">
                 TermiCore
               </span>
             </button>
-            <p className="mt-4 text-sm leading-relaxed text-slate-400">
+            <p className="mt-4 text-sm leading-relaxed text-[#475569]">
               Delivering precision terminal block connectors for connected electrical and industrial automation solutions worldwide.
             </p>
             <div className="mt-5 flex items-center gap-3">
@@ -40,7 +42,7 @@ export function Footer() {
                 type="button"
                 onClick={() => handleLink('/contact')}
                 aria-label="Connect with TermiCore Sales"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-700 text-slate-300 hover:border-sky-400 hover:text-white transition-colors cursor-pointer"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-[#475569] hover:border-[#0F766E] hover:text-[#0F766E] transition-colors cursor-pointer"
               >
                 <Linkedin className="h-4 w-4" />
               </button>
@@ -49,70 +51,34 @@ export function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-display text-sm font-semibold text-white tracking-wide">
+            <h3 className="font-display text-sm font-semibold text-[#0F172A] tracking-wide">
               Quick Links
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm">
-              <li>
-                <button
-                  type="button"
-                  onClick={() => handleLink('/')}
-                  className="text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  Home
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => handleLink('/products')}
-                  className="text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  All Products
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => handleLink('/accessories')}
-                  className="text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  Accessories
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => handleLink('/quality')}
-                  className="text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  Quality &amp; Approvals
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => handleLink('/about')}
-                  className="text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  About Us
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => handleLink('/contact')}
-                  className="text-slate-400 hover:text-white transition-colors cursor-pointer"
-                >
-                  Contact
-                </button>
-              </li>
+              {[
+                { label: 'Home', path: '/' as RoutePath },
+                { label: 'All Products', path: '/products' as RoutePath },
+                { label: 'Accessories', path: '/accessories' as RoutePath },
+                { label: 'Quality & Approvals', path: '/quality' as RoutePath },
+                { label: 'About Us', path: '/about' as RoutePath },
+                { label: 'Contact', path: '/contact' as RoutePath },
+              ].map((item) => (
+                <li key={item.path}>
+                  <button
+                    type="button"
+                    onClick={() => handleLink(item.path)}
+                    className="text-[#475569] hover:text-[#0F766E] transition-colors cursor-pointer"
+                  >
+                    {item.label}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
 
           {/* Our Products */}
           <div>
-            <h3 className="font-display text-sm font-semibold text-white tracking-wide">
+            <h3 className="font-display text-sm font-semibold text-[#0F172A] tracking-wide">
               Our Products
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm">
@@ -121,7 +87,7 @@ export function Footer() {
                   <button
                     type="button"
                     onClick={() => handleLink(cat.slug)}
-                    className="text-left text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    className="text-left text-[#475569] hover:text-[#0F766E] transition-colors cursor-pointer"
                   >
                     {cat.title}
                   </button>
@@ -132,30 +98,30 @@ export function Footer() {
 
           {/* Contact Us */}
           <div>
-            <h3 className="font-display text-sm font-semibold text-white tracking-wide">
+            <h3 className="font-display text-sm font-semibold text-[#0F172A] tracking-wide">
               Contact Us
             </h3>
-            <ul className="mt-4 space-y-3 text-sm text-slate-400">
+            <ul className="mt-4 space-y-3 text-sm text-[#475569]">
               <li className="flex items-start gap-2.5">
-                <Mail className="h-4 w-4 text-sky-400 shrink-0 mt-0.5" />
+                <Mail className="h-4 w-4 text-[#0F766E] shrink-0 mt-0.5" />
                 <a
                   href={`mailto:${CONTACT_INFO.email}`}
-                  className="hover:text-white transition-colors"
+                  className="hover:text-[#0F172A] transition-colors"
                 >
                   {CONTACT_INFO.email}
                 </a>
               </li>
               <li className="flex items-start gap-2.5">
-                <Phone className="h-4 w-4 text-sky-400 shrink-0 mt-0.5" />
+                <Phone className="h-4 w-4 text-[#0F766E] shrink-0 mt-0.5" />
                 <a
                   href={`tel:${CONTACT_INFO.phone.replace(/\s+/g, '')}`}
-                  className="hover:text-white transition-colors tabular-nums"
+                  className="hover:text-[#0F172A] transition-colors tabular-nums"
                 >
                   {CONTACT_INFO.phone}
                 </a>
               </li>
               <li className="flex items-start gap-2.5">
-                <MapPin className="h-4 w-4 text-sky-400 shrink-0 mt-0.5" />
+                <MapPin className="h-4 w-4 text-[#0F766E] shrink-0 mt-0.5" />
                 <span>{CONTACT_INFO.location}</span>
               </li>
             </ul>
@@ -163,27 +129,27 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 border-t border-slate-800 pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-slate-400">
+        <div className="mt-12 border-t border-slate-300/70 pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-[#64748B]">
           <div>&copy; {new Date().getFullYear()} TermiCore. All rights reserved.</div>
           <div className="flex flex-wrap items-center gap-6">
             <button
               type="button"
               onClick={() => setLegalModal('privacy')}
-              className="hover:text-white transition-colors cursor-pointer"
+              className="hover:text-[#0F172A] transition-colors cursor-pointer"
             >
               Privacy Policy
             </button>
             <button
               type="button"
               onClick={() => setLegalModal('terms')}
-              className="hover:text-white transition-colors cursor-pointer"
+              className="hover:text-[#0F172A] transition-colors cursor-pointer"
             >
               Terms of Service
             </button>
             <button
               type="button"
               onClick={() => setLegalModal('sitemap')}
-              className="hover:text-white transition-colors cursor-pointer"
+              className="hover:text-[#0F172A] transition-colors cursor-pointer"
             >
               Sitemap
             </button>
@@ -198,23 +164,23 @@ export function Footer() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.16 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-xs"
             onClick={() => setLegalModal(null)}
           >
             <motion.div
               role="dialog"
               aria-modal="true"
               aria-labelledby="legal-modal-title"
-              initial={{ opacity: 0, scale: 0.97, y: 8 }}
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.97, y: 6 }}
-              transition={{ duration: 0.18, ease: INDUSTRIAL_EASE }}
-              className="w-full max-w-lg rounded-lg border border-slate-200 bg-white p-6 text-slate-900 shadow-xl"
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.2, ease: INDUSTRIAL_EASE }}
+              className="w-full max-w-lg rounded-lg border border-slate-200 bg-white p-6 text-[#0F172A] shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                <h3 id="legal-modal-title" className="font-display text-lg font-bold text-slate-950">
+                <h3 id="legal-modal-title" className="font-display text-lg font-bold text-[#0F172A]">
                   {legalModal === 'privacy' && 'Privacy Policy'}
                   {legalModal === 'terms' && 'Terms of Service'}
                   {legalModal === 'sitemap' && 'TermiCore Site Directory'}
@@ -223,20 +189,21 @@ export function Footer() {
                   type="button"
                   aria-label="Close dialog"
                   onClick={() => setLegalModal(null)}
-                  className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
+                  className="rounded-md p-1.5 text-[#64748B] hover:bg-slate-100 hover:text-[#0F172A] transition-colors cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <div className="mt-4 text-sm text-slate-600 space-y-3 leading-relaxed">
+              <div className="mt-4 text-sm text-[#475569] space-y-3 leading-relaxed">
                 {legalModal === 'privacy' && (
                   <>
                     <p>
                       TermiCore collects contact and technical specification data solely to process engineering inquiries, sample dispatches, and factory-direct quote requests.
                     </p>
                     <p>
-                      For compliance documentation or data inquiries, contact {CONTACT_INFO.email}.
+                      For compliance documentation or data inquiries, contact{' '}
+                      <span className="font-medium text-[#0F766E]">{CONTACT_INFO.email}</span>.
                     </p>
                   </>
                 )}
@@ -275,7 +242,7 @@ export function Footer() {
                           setLegalModal(null);
                           handleLink(item.path);
                         }}
-                        className="rounded-md border border-slate-200 px-3 py-2 text-left text-xs font-medium text-slate-700 hover:border-[#0284C7] hover:text-slate-950 transition-colors cursor-pointer"
+                        className="rounded-md border border-slate-200 bg-[#F7F9FB] px-3 py-2 text-left text-xs font-medium text-[#0F172A] hover:border-[#0F766E] hover:text-[#0F766E] transition-colors cursor-pointer"
                       >
                         {item.label}
                       </button>

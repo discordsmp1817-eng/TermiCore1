@@ -1,5 +1,17 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from 'react';
+import Lenis from 'lenis';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { RoutePath } from '../data/termicoreData';
+
+gsap.registerPlugin(ScrollTrigger);
 
 export interface RfqItem {
   id: string;
@@ -15,6 +27,7 @@ export type LegalModalType = 'privacy' | 'terms' | 'sitemap' | null;
 interface AppContextValue {
   route: RoutePath;
   navigate: (to: RoutePath) => void;
+  scrollToTarget: (target: string | number) => void;
   rfqItems: RfqItem[];
   addToRfq: (item: Omit<RfqItem, 'quantity'> & { quantity?: number }) => void;
   updateRfqQuantity: (id: string, quantity: number) => void;
@@ -42,8 +55,28 @@ const VALID_ROUTES: RoutePath[] = [
   '/quote',
 ];
 
+function getBasePrefix(): string {
+  const metaEnv = (import.meta as unknown as { env?: { BASE_URL?: string } }).env;
+  const base = metaEnv?.BASE_URL ?? '/';
+  if (base && base !== '/' && base !== './') {
+    return base.replace(/\/+$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location.hostname.endsWith('github.io')) {
+    const firstSeg = window.location.pathname.split('/').filter(Boolean)[0];
+    if (firstSeg && !VALID_ROUTES.includes(`/${firstSeg}` as RoutePath)) {
+      return `/${firstSeg}`;
+    }
+  }
+  return '';
+}
+
 function normalizePath(rawPath: string): RoutePath {
-  const cleaned = rawPath.replace(/\/+$/, '').replace(/\.html$/i, '') || '/';
+  const basePrefix = getBasePrefix();
+  let stripped = rawPath;
+  if (basePrefix && stripped.startsWith(basePrefix)) {
+    stripped = stripped.slice(basePrefix.length) || '/';
+  }
+  const cleaned = stripped.replace(/\/+$/, '').replace(/\.html$/i, '') || '/';
   if (cleaned === '/index') return '/';
   if (VALID_ROUTES.includes(cleaned as RoutePath)) {
     return cleaned as RoutePath;
@@ -65,6 +98,59 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   });
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [legalModal, setLegalModal] = useState<LegalModalType>(null);
+  const lenisRef = useRef<Lenis | null>(null);
+
+  // Initialize Lenis smooth scrolling integrated with GSAP ScrollTrigger
+  useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) return;
+
+    const lenis = new Lenis({
+      duration: 1.05,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      touchMultiplier: 1.4,
+    });
+
+    lenisRef.current = lenis;
+
+    const onLenisScroll = () => {
+      ScrollTrigger.update();
+    };
+    lenis.on('scroll', onLenisScroll);
+
+    const tick = (time: number) => {
+      lenis.raf(time * 1000);
+    };
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      gsap.ticker.remove(tick);
+      lenis.off('scroll', onLenisScroll);
+      lenis.destroy();
+      lenisRef.current = null;
+    };
+  }, []);
+
+  // Pause Lenis background scroll when drawer or legal modal is open
+  useEffect(() => {
+    const lenis = lenisRef.current;
+    if (!lenis) return;
+    if (isDrawerOpen || legalModal) {
+      lenis.stop();
+    } else {
+      lenis.start();
+    }
+  }, [isDrawerOpen, legalModal]);
+
+  // Refresh ScrollTrigger measurements when route changes
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 220);
+    return () => window.clearTimeout(timer);
+  }, [route]);
 
   useEffect(() => {
     try {
@@ -77,20 +163,43 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const onPopState = () => {
       setRoute(normalizePath(window.location.pathname));
-      window.scrollTo({ top: 0, behavior: 'auto' });
+      if (lenisRef.current) {
+        lenisRef.current.scrollTo(0, { immediate: true });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
+  const scrollToTarget = useCallback((target: string | number) => {
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(target, { offset: -72, duration: 0.9 });
+    } else if (typeof target === 'number') {
+      window.scrollTo({ top: target, behavior: 'auto' });
+    } else {
+      const el = document.querySelector(target);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
   const navigate = useCallback((to: RoutePath) => {
     const normalized = normalizePath(to);
-    if (window.location.pathname !== normalized) {
-      window.history.pushState({}, '', normalized);
+    const basePrefix = getBasePrefix();
+    const targetUrl = basePrefix
+      ? `${basePrefix}${normalized === '/' ? '/' : normalized}`
+      : normalized;
+    if (window.location.pathname !== targetUrl) {
+      window.history.pushState({}, '', targetUrl);
     }
     setRoute(normalized);
     setIsDrawerOpen(false);
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(0, { immediate: true });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
   }, []);
 
   const addToRfq = useCallback((item: Omit<RfqItem, 'quantity'> & { quantity?: number }) => {
@@ -128,6 +237,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       value={{
         route,
         navigate,
+        scrollToTarget,
         rfqItems,
         addToRfq,
         updateRfqQuantity,
