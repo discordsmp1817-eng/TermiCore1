@@ -8,6 +8,7 @@ interface EngineeringImageProps {
   className?: string;
   fallbackTitle?: string;
   darkFallback?: boolean;
+  priority?: boolean;
 }
 
 export function EngineeringImage({
@@ -16,6 +17,7 @@ export function EngineeringImage({
   className = '',
   fallbackTitle,
   darkFallback = false,
+  priority = false,
 }: EngineeringImageProps) {
   const [failed, setFailed] = useState(false);
 
@@ -43,6 +45,9 @@ export function EngineeringImage({
       src={resolveAssetUrl(src)}
       alt={alt}
       referrerPolicy="no-referrer"
+      loading={priority ? 'eager' : 'lazy'}
+      decoding="async"
+      fetchPriority={priority ? 'high' : 'auto'}
       onError={() => setFailed(true)}
       className={className}
     />

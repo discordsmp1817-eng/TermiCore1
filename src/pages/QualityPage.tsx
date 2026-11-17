@@ -15,25 +15,25 @@ export function QualityPage() {
 
   return (
     <div>
-      <section className="bg-[#F7F9FB] border-b border-slate-200 py-12 lg:py-16">
+      <section className="bg-[#F5F7F9] bg-engineering-grid border-b border-[#DCE2E8] py-14 lg:py-20">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6 grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-center">
           <RevealBlock className="lg:col-span-7" blur>
             <p className="font-mono text-xs font-semibold tracking-wide text-[#0F766E]">
               Quality &amp; Approvals
             </p>
-            <h1 className="mt-2 font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-[#0F172A] text-balance">
+            <h1 className="mt-2 font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#101D2B] text-balance">
               Uncompromising Quality &amp; Safety
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-[#475569]">
               Every TermiCore terminal block undergoes rigorous testing for thermal stability, mechanical retention, and dielectric insulation to meet international electrical engineering standards.
             </p>
-            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs font-semibold text-[#0F172A]">
+            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-xs font-semibold text-[#101D2B]">
               <span>Dielectric Tested</span>
-              <span aria-hidden="true" className="text-slate-300">/</span>
+              <span aria-hidden="true" className="text-[#CBD5E1]">/</span>
               <span>Vibration Proof</span>
-              <span aria-hidden="true" className="text-slate-300">/</span>
+              <span aria-hidden="true" className="text-[#CBD5E1]">/</span>
               <span>Thermal Cycling</span>
-              <span aria-hidden="true" className="text-slate-300">/</span>
+              <span aria-hidden="true" className="text-[#CBD5E1]">/</span>
               <span>Zero Defect Manufacturing</span>
             </div>
           </RevealBlock>
@@ -41,7 +41,7 @@ export function QualityPage() {
           <ImageReveal
             direction="right"
             immediate
-            className="lg:col-span-5 rounded-lg border border-slate-200 bg-[#EEF2F6] aspect-[16/9]"
+            className="lg:col-span-5 rounded-lg border border-[#DCE2E8] bg-[#EEF2F6] aspect-[16/9] shadow-xs"
           >
             <EngineeringImage
               src={IMAGES.heroDinRail}
@@ -53,13 +53,13 @@ export function QualityPage() {
         </div>
       </section>
 
-      <section className="bg-[#EEF2F6] border-b border-slate-200 py-14 lg:py-20">
+      <section className="bg-[#EEF2F6] border-b border-[#DCE2E8] py-14 lg:py-20">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6">
           <RevealBlock className="max-w-2xl mb-10">
             <p className="font-mono text-xs font-semibold tracking-wide text-[#0F766E]">
               Certifications &amp; Approvals
             </p>
-            <h2 className="mt-2 font-display text-2xl sm:text-3xl font-bold text-[#0F172A]">
+            <h2 className="mt-2 font-display text-2xl sm:text-3xl font-extrabold text-[#101D2B]">
               International Compliance Matrix
             </h2>
           </RevealBlock>
@@ -135,20 +135,20 @@ export function QualityPage() {
           </div>
 
           <RevealBlock className="mt-12">
-            <GlowCard variant="light" className="border-slate-200 p-8">
+            <GlowCard variant="dark" className="bg-engineering-grid-dark p-8 sm:p-10">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <div>
-                  <h2 className="font-display text-2xl font-bold text-[#0F172A]">
+                  <h2 className="font-display text-2xl font-extrabold text-white">
                     Need Compliance Documents or Test Reports?
                   </h2>
-                  <p className="mt-1.5 text-sm text-[#475569]">
+                  <p className="mt-1.5 text-sm text-[#CBD5E1]">
                     Contact our technical team to request UL certificates, RoHS declarations, or CAD models for your project.
                   </p>
                 </div>
                 <MagneticButton
                   type="button"
                   onClick={() => navigate('/contact')}
-                  className="group inline-flex items-center gap-2 rounded-lg bg-[#0F766E] px-6 py-3 text-sm font-semibold text-white hover:bg-[#0D9488] transition-colors whitespace-nowrap shrink-0 cursor-pointer min-h-[44px]"
+                  className="group inline-flex items-center gap-2 rounded-lg bg-[#0D9488] px-6 py-3 text-sm font-semibold text-white hover:bg-[#0F766E] transition-colors whitespace-nowrap shrink-0 cursor-pointer min-h-[44px]"
                 >
                   <span>Request Documents</span>
                   <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />

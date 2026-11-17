@@ -9,14 +9,14 @@ export default defineConfig(({ command }) => {
     command === 'serve'
       ? '/'
       : process.env.VITE_BASE_PATH ||
-        (process.env.GITHUB_ACTIONS ? `/${repoName}/` : './');
+        (process.env.GITHUB_ACTIONS ? `/${repoName}/` : '/');
 
   return {
     base,
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(import.meta.dirname, '.'),
       },
     },
     server: {

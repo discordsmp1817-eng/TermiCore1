@@ -4,12 +4,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express, { type Request, type Response } from 'express';
+import nodemailer from 'nodemailer';
 import {
   ACCESSORIES,
   CERTIFICATIONS,
   PRODUCT_CATEGORIES,
   TESTING_PROTOCOLS,
 } from './src/data/termicoreData.ts';
+import {
+  OWNER_INBOX_EMAIL,
+  buildContactEmailContent,
+  buildQuoteEmailContent,
+  buildRfqEmailContent,
+} from './src/utils/emailFormatter.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +25,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const IS_PROD = process.env.NODE_ENV === 'production';
 const DATA_DIR = path.resolve(__dirname, 'data');
 const STORE_FILE = path.join(DATA_DIR, 'submissions.json');
+const RECIPIENT_EMAIL = (process.env.RECIPIENT_EMAIL || OWNER_INBOX_EMAIL).trim();
 
 export interface RfqLineItem {
   id: string;
@@ -125,6 +133,153 @@ function sanitizeItems(rawItems: unknown): RfqLineItem[] {
     .filter((item) => item.model.length > 0 && item.title.length > 0);
 }
 
+interface EmailDeliveryOutcome {
+  emailDelivered: boolean;
+  emailProvider: 'smtp' | 'resend' | 'formsubmit' | 'none';
+  emailStatus: 'sent' | 'activation_required' | 'queued_locally';
+  emailMessage?: string;
+  recipientEmail: string;
+}
+
+async function deliverInquiryEmail(params: {
+  subject: string;
+  text: string;
+  html: string;
+  replyTo: string;
+  formSubmitPayload: Record<string, string>;
+  originHeader?: string;
+}): Promise<EmailDeliveryOutcome> {
+  const smtpUser = process.env.SMTP_USER?.trim();
+  const smtpPass = process.env.SMTP_PASS?.trim();
+  const smtpHost = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
+  const smtpPort = Number(process.env.SMTP_PORT || 465);
+  const smtpSecure = process.env.SMTP_SECURE
+    ? process.env.SMTP_SECURE !== 'false'
+    : smtpPort === 465;
+
+  if (smtpUser && smtpPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpSecure,
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM?.trim() || `"TermiCore Website" <${smtpUser}>`,
+        to: RECIPIENT_EMAIL,
+        replyTo: params.replyTo,
+        subject: params.subject,
+        text: params.text,
+        html: params.html,
+      });
+
+      return {
+        emailDelivered: true,
+        emailProvider: 'smtp',
+        emailStatus: 'sent',
+        recipientEmail: RECIPIENT_EMAIL,
+      };
+    } catch (err) {
+      console.error('SMTP email delivery failed:', err);
+    }
+  }
+
+  const resendKey = process.env.RESEND_API_KEY?.trim();
+  if (resendKey) {
+    try {
+      const resendRes = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: process.env.RESEND_FROM?.trim() || 'TermiCore Inquiries <onboarding@resend.dev>',
+          to: [RECIPIENT_EMAIL],
+          reply_to: params.replyTo,
+          subject: params.subject,
+          text: params.text,
+          html: params.html,
+        }),
+      });
+
+      if (resendRes.ok) {
+        return {
+          emailDelivered: true,
+          emailProvider: 'resend',
+          emailStatus: 'sent',
+          recipientEmail: RECIPIENT_EMAIL,
+        };
+      }
+      const errText = await resendRes.text();
+      console.error('Resend API email delivery failed:', resendRes.status, errText);
+    } catch (err) {
+      console.error('Resend API request error:', err);
+    }
+  }
+
+  // Zero-config FormSubmit relay fallback when SMTP/Resend env vars are unset
+  if (process.env.ENABLE_FORMSUBMIT_RELAY !== 'false') {
+    try {
+      const referer =
+        params.originHeader && !params.originHeader.includes('localhost')
+          ? params.originHeader
+          : 'https://termicore-inquiries.github.io/';
+      const relayRes = await fetch(
+        `https://formsubmit.co/ajax/${encodeURIComponent(RECIPIENT_EMAIL)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            Origin: referer,
+            Referer: referer,
+          },
+          body: JSON.stringify(params.formSubmitPayload),
+        }
+      );
+
+      const relayData = (await relayRes.json().catch(() => ({}))) as {
+        success?: boolean | string;
+        message?: string;
+      };
+
+      const isSuccess = relayData.success === true || relayData.success === 'true';
+      if (relayRes.ok && isSuccess) {
+        return {
+          emailDelivered: true,
+          emailProvider: 'formsubmit',
+          emailStatus: 'sent',
+          recipientEmail: RECIPIENT_EMAIL,
+        };
+      }
+
+      const relayMsg = String(relayData.message || '');
+      if (relayMsg.toLowerCase().includes('activat')) {
+        return {
+          emailDelivered: false,
+          emailProvider: 'formsubmit',
+          emailStatus: 'activation_required',
+          emailMessage: `A one-time FormSubmit activation link was sent to ${RECIPIENT_EMAIL}. Click Activate in that email to receive future submissions automatically, or add SMTP credentials in .env.`,
+          recipientEmail: RECIPIENT_EMAIL,
+        };
+      }
+    } catch (err) {
+      console.error('FormSubmit relay error:', err);
+    }
+  }
+
+  return {
+    emailDelivered: false,
+    emailProvider: 'none',
+    emailStatus: 'queued_locally',
+    emailMessage: `Inquiry saved on server. Configure SMTP_USER/SMTP_PASS (Gmail App Password) in .env to email ${RECIPIENT_EMAIL} directly.`,
+    recipientEmail: RECIPIENT_EMAIL,
+  };
+}
+
 async function startServer() {
   const app = express();
   app.disable('x-powered-by');
@@ -222,7 +377,7 @@ async function startServer() {
   });
 
   // 3. Quick RFQ Queue submission
-  app.post('/api/rfq', (req: Request, res: Response) => {
+  app.post('/api/rfq', async (req: Request, res: Response) => {
     const company = String(req.body?.company ?? '').trim();
     const email = String(req.body?.email ?? '').trim();
     const items = sanitizeItems(req.body?.items);
@@ -254,17 +409,28 @@ async function startServer() {
     store.rfqs.unshift(record);
     writeStore(store);
 
+    const formatted = buildRfqEmailContent(record);
+    const delivery = await deliverInquiryEmail({
+      subject: formatted.subject,
+      text: formatted.text,
+      html: formatted.html,
+      replyTo: email,
+      formSubmitPayload: formatted.formSubmitPayload,
+      originHeader: req.get('origin') || req.get('referer'),
+    });
+
     res.status(201).json({
       ok: true,
       referenceId: record.referenceId,
       receivedAt: record.createdAt,
       itemCount: items.length,
       totalUnits,
+      ...delivery,
     });
   });
 
   // 4. Full Factory-Direct Quote Request submission
-  app.post('/api/quote', (req: Request, res: Response) => {
+  app.post('/api/quote', async (req: Request, res: Response) => {
     const name = String(req.body?.name ?? '').trim();
     const company = String(req.body?.company ?? '').trim();
     const email = String(req.body?.email ?? '').trim();
@@ -302,17 +468,28 @@ async function startServer() {
     store.quotes.unshift(record);
     writeStore(store);
 
+    const formatted = buildQuoteEmailContent(record);
+    const delivery = await deliverInquiryEmail({
+      subject: formatted.subject,
+      text: formatted.text,
+      html: formatted.html,
+      replyTo: email,
+      formSubmitPayload: formatted.formSubmitPayload,
+      originHeader: req.get('origin') || req.get('referer'),
+    });
+
     res.status(201).json({
       ok: true,
       referenceId: record.referenceId,
       receivedAt: record.createdAt,
       itemCount: items.length,
       totalUnits,
+      ...delivery,
     });
   });
 
   // 5. Technical Contact Inquiry submission
-  app.post('/api/contact', (req: Request, res: Response) => {
+  app.post('/api/contact', async (req: Request, res: Response) => {
     const name = String(req.body?.name ?? '').trim();
     const email = String(req.body?.email ?? '').trim();
     const phone = String(req.body?.phone ?? '').trim();
@@ -350,10 +527,21 @@ async function startServer() {
     store.contacts.unshift(record);
     writeStore(store);
 
+    const formatted = buildContactEmailContent(record);
+    const delivery = await deliverInquiryEmail({
+      subject: formatted.subject,
+      text: formatted.text,
+      html: formatted.html,
+      replyTo: email,
+      formSubmitPayload: formatted.formSubmitPayload,
+      originHeader: req.get('origin') || req.get('referer'),
+    });
+
     res.status(201).json({
       ok: true,
       referenceId: record.referenceId,
       receivedAt: record.createdAt,
+      ...delivery,
     });
   });
 

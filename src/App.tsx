@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useEffect } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { AppProvider, useApp } from './context/AppContext';
@@ -19,8 +20,29 @@ import { QualityPage } from './pages/QualityPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage, QuotePage } from './pages/ContactQuotePages';
 
+const STATIC_ROUTE_TITLES: Record<string, string> = {
+  '/': 'TermiCore — Precision Terminal Block Connectors & Industrial Wiring Systems',
+  '/products': 'Terminal Block Product Catalog | TermiCore',
+  '/accessories': 'DIN Rail Accessories, Jumpers & End Plates | TermiCore',
+  '/quality': 'Quality Testing, UL 1059 & IEC 60947-7-1 Compliance | TermiCore',
+  '/about': 'About TermiCore | Industrial Connectivity Manufacturer',
+  '/contact': 'Contact Engineering & Sales | TermiCore',
+  '/quote': 'Request a Factory-Direct Quote | TermiCore',
+};
+
 function RouteView() {
   const { route } = useApp();
+
+  useEffect(() => {
+    const matchingCategory = PRODUCT_CATEGORIES.find((c) => c.slug === route);
+    if (matchingCategory) {
+      document.title = `${matchingCategory.title} (${matchingCategory.seriesCode}) | TermiCore`;
+    } else {
+      document.title =
+        STATIC_ROUTE_TITLES[route] ||
+        'TermiCore — Precision Terminal Block Connectors & Industrial Wiring Systems';
+    }
+  }, [route]);
 
   const renderPage = () => {
     const matchingCategory = PRODUCT_CATEGORIES.find((c) => c.slug === route);
@@ -67,7 +89,7 @@ export default function App() {
   return (
     <MotionConfig reducedMotion="user">
       <AppProvider>
-        <div className="min-h-screen flex flex-col bg-[#F7F9FB] text-[#0F172A]">
+        <div className="min-h-screen flex flex-col bg-[#F5F7F9] text-[#101D2B]">
           <Header />
           <main className="flex-1">
             <RouteView />

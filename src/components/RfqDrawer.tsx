@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { X, Trash2, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { X, Trash2, ArrowRight, CheckCircle2, Mail } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useApp } from '../context/AppContext';
+import {
+  InquirySubmitResult,
+  submitQuickRfqInquiry,
+} from '../utils/inquiryTransport';
 import { INDUSTRIAL_EASE } from './MotionPrimitives';
 
 export function RfqDrawer() {
@@ -20,7 +24,7 @@ export function RfqDrawer() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [referenceId, setReferenceId] = useState('');
+  const [submissionInfo, setSubmissionInfo] = useState<InquirySubmitResult | null>(null);
 
   const handleQuickSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,33 +42,20 @@ export function RfqDrawer() {
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/rfq', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company: company.trim(),
-          email: email.trim(),
-          items: rfqItems,
-        }),
+      const result = await submitQuickRfqInquiry({
+        company: company.trim(),
+        email: email.trim(),
+        items: rfqItems,
       });
-      const contentType = response.headers.get('content-type') || '';
-      if (response.status === 404 && !contentType.includes('application/json')) {
-        const fallbackRef = `RFQ-${new Date().getFullYear()}-${Math.random().toString(16).slice(2, 8).toUpperCase()}`;
-        setReferenceId(fallbackRef);
-        setSubmitted(true);
-        clearRfq();
-        return;
-      }
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setError(data.error || 'Unable to submit RFQ right now. Please try again.');
-        return;
-      }
-      setReferenceId(data.referenceId || '');
+      setSubmissionInfo(result);
       setSubmitted(true);
       clearRfq();
-    } catch {
-      setError('Network error while submitting RFQ. Please try again.');
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Network error while submitting RFQ. Please try again.'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -72,7 +63,7 @@ export function RfqDrawer() {
 
   const resetAndClose = () => {
     setSubmitted(false);
-    setReferenceId('');
+    setSubmissionInfo(null);
     setEmail('');
     setCompany('');
     setError('');
@@ -98,15 +89,15 @@ export function RfqDrawer() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ duration: 0.28, ease: INDUSTRIAL_EASE }}
-            className="flex h-full w-full max-w-md flex-col bg-white shadow-2xl border-l border-slate-200"
+            className="flex h-full w-full max-w-md flex-col bg-white shadow-2xl border-l border-[#DCE2E8]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-[#F7F9FB]">
+            <div className="flex items-center justify-between border-b border-[#DCE2E8] px-6 py-4 bg-[#101D2B] text-white">
               <div>
-                <h2 className="font-display text-lg font-bold text-[#0F172A]">
+                <h2 className="font-display text-lg font-bold text-white">
                   Quick RFQ Queue
                 </h2>
-                <p className="text-xs text-[#64748B]">
+                <p className="text-xs text-[#94A3B8]">
                   {rfqItems.length} {rfqItems.length === 1 ? 'item' : 'items'} selected for quotation
                 </p>
               </div>
@@ -114,7 +105,7 @@ export function RfqDrawer() {
                 type="button"
                 aria-label="Close RFQ drawer"
                 onClick={resetAndClose}
-                className="rounded-md p-2 text-[#64748B] hover:bg-slate-200/70 hover:text-[#0F172A] transition-colors cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
+                className="rounded-md p-2 text-[#CBD5E1] hover:bg-[#1E2E3F] hover:text-white transition-colors cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -132,22 +123,40 @@ export function RfqDrawer() {
                   <h3 className="mt-3 font-display text-base font-bold text-[#0F172A]">
                     RFQ Submitted
                   </h3>
-                  {referenceId && (
+                  {submissionInfo?.referenceId && (
                     <div className="mt-2 inline-block rounded border border-[#0F766E]/25 bg-white px-2.5 py-1 font-mono text-xs font-semibold text-[#0F766E]">
-                      Ref: {referenceId}
+                      Ref: {submissionInfo.referenceId}
                     </div>
                   )}
                   <p className="mt-2 text-sm text-[#475569]">
-                    Your selected terminal block specifications have been queued for our sales engineering team. We will reply to{' '}
+                    {submissionInfo?.emailStatus === 'sent'
+                      ? `Your RFQ details have been sent to ${submissionInfo.recipientEmail}. We will reply to `
+                      : 'Your selected terminal block specifications have been queued for our sales engineering team. We will reply to '}
                     <span className="font-medium text-[#0F172A]">{email}</span>.
                   </p>
-                  <button
-                    type="button"
-                    onClick={resetAndClose}
-                    className="mt-5 w-full rounded-lg bg-[#0F766E] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0D9488] transition-colors cursor-pointer"
-                  >
-                    Continue Browsing
-                  </button>
+                  {submissionInfo?.emailMessage && (
+                    <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                      {submissionInfo.emailMessage}
+                    </p>
+                  )}
+                  <div className="mt-5 space-y-2">
+                    <button
+                      type="button"
+                      onClick={resetAndClose}
+                      className="w-full rounded-lg bg-[#0F766E] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0D9488] transition-colors cursor-pointer"
+                    >
+                      Continue Browsing
+                    </button>
+                    {submissionInfo?.mailtoHref && (
+                      <a
+                        href={submissionInfo.mailtoHref}
+                        className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-[#0F172A] hover:border-[#0F766E] hover:text-[#0F766E] transition-colors"
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                        <span>Open in Email App</span>
+                      </a>
+                    )}
+                  </div>
                 </motion.div>
               ) : rfqItems.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-slate-300 bg-[#F7F9FB] p-8 text-center">
@@ -241,7 +250,7 @@ export function RfqDrawer() {
                       value={company}
                       onChange={(e) => setCompany(e.target.value)}
                       placeholder="Acme Switchgear Pvt. Ltd."
-                      className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-[#0F172A] placeholder:text-slate-400 focus:border-[#0F766E] focus:outline-none transition-colors"
+                      className="w-full rounded-md border border-[#CBD5E1] bg-white px-3 py-2 text-sm text-[#101D2B] placeholder:text-slate-400 focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15 focus:outline-none transition-colors"
                     />
                   </div>
                   <div>
@@ -254,11 +263,13 @@ export function RfqDrawer() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="engineering@company.com"
-                      className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-[#0F172A] placeholder:text-slate-400 focus:border-[#0F766E] focus:outline-none transition-colors"
+                      className="w-full rounded-md border border-[#CBD5E1] bg-white px-3 py-2 text-sm text-[#101D2B] placeholder:text-slate-400 focus:border-[#0F766E] focus:ring-2 focus:ring-[#0F766E]/15 focus:outline-none transition-colors"
                     />
                   </div>
                   {error && (
-                    <p className="text-xs font-medium text-rose-600">{error}</p>
+                    <div role="alert" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800">
+                      {error}
+                    </div>
                   )}
                   <div className="flex flex-col gap-2 pt-1">
                     <button

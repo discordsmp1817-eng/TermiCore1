@@ -76,13 +76,13 @@ export function RevealBlock({
           y: 0,
           opacity: 1,
           filter: 'blur(0px)',
-          duration: 0.78,
+          duration: 0.72,
           delay,
           ease: 'power3.out',
           clearProps: 'transform,opacity,filter',
           scrollTrigger: {
             trigger: el,
-            start: 'top 84%',
+            start: 'top 90%',
             once: true,
           },
         }
@@ -142,13 +142,13 @@ export function StaggerGrid({
           y: 0,
           opacity: 1,
           scale: 1,
-          duration: 0.72,
+          duration: 0.68,
           stagger,
           ease: 'power3.out',
           clearProps: 'transform,opacity',
           scrollTrigger: {
             trigger: el,
-            start: 'top 82%',
+            start: 'top 90%',
             once: true,
           },
         }
@@ -214,7 +214,7 @@ export function ImageReveal({
         ? undefined
         : {
             trigger: wrap,
-            start: 'top 84%',
+            start: 'top 90%',
             once: true,
           };
 
@@ -227,7 +227,7 @@ export function ImageReveal({
         {
           clipPath: 'inset(0% 0% 0% 0%)',
           opacity: 1,
-          duration: 0.95,
+          duration: 0.9,
           delay,
           ease: 'power3.out',
           clearProps: 'clipPath,opacity',
@@ -237,10 +237,10 @@ export function ImageReveal({
 
       gsap.fromTo(
         inner,
-        { scale: 1.1 },
+        { scale: 1.08 },
         {
           scale: 1,
-          duration: 1.1,
+          duration: 1.05,
           delay,
           ease: 'power3.out',
           clearProps: 'transform',
@@ -283,18 +283,100 @@ export function ImageReveal({
 }
 
 /* -------------------------------------------------------------------------- */
+/* 2b. GSAP Precision Engineering Line-Draw Accent Rule                       */
+/* -------------------------------------------------------------------------- */
+
+interface EngineeringRuleProps {
+  className?: string;
+  immediate?: boolean;
+  delay?: number;
+  dark?: boolean;
+}
+
+export function EngineeringRule({
+  className = '',
+  immediate = false,
+  delay = 0,
+  dark = false,
+}: EngineeringRuleProps) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const lineRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = usePrefersReducedMotion();
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    const line = lineRef.current;
+    if (!wrap || !line || reducedMotion) return;
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        line,
+        { scaleX: 0 },
+        {
+          scaleX: 1,
+          duration: 0.85,
+          delay,
+          ease: 'power3.out',
+          clearProps: 'transform',
+          scrollTrigger: immediate
+            ? undefined
+            : {
+                trigger: wrap,
+                start: 'top 92%',
+                once: true,
+              },
+        }
+      );
+    }, wrapRef);
+
+    return () => ctx.revert();
+  }, [immediate, delay, reducedMotion]);
+
+  return (
+    <div ref={wrapRef} aria-hidden="true" className={`relative h-[1px] w-full overflow-hidden ${dark ? 'bg-slate-800' : 'bg-[#DCE2E8]'} ${className}`}>
+      <div
+        ref={lineRef}
+        className={`h-full w-full origin-left ${
+          dark
+            ? 'bg-gradient-to-r from-[#0D9488] via-[#2DD4BF]/50 to-transparent'
+            : 'bg-gradient-to-r from-[#0F766E] via-[#0D9488]/40 to-transparent'
+        }`}
+      />
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /* 3. Meaningful Numeric Count-Up Metric                                      */
 /* -------------------------------------------------------------------------- */
 
 interface CountUpMetricProps {
   value: string;
   className?: string;
+  immediate?: boolean;
+  delay?: number;
+  duration?: number;
 }
 
-export function CountUpMetric({ value, className = '' }: CountUpMetricProps) {
+function formatZeroStart(value: string): string {
+  const match = value.match(/^([^\d]*)(\d+)(.*)$/);
+  if (!match) return value;
+  const [, prefix, digits, suffix] = match;
+  const zeroDigits = prefix ? '0'.repeat(digits.length) : '0';
+  return `${prefix}${zeroDigits}${suffix}`;
+}
+
+export function CountUpMetric({
+  value,
+  className = '',
+  delay = 0,
+  duration = 1.9,
+}: CountUpMetricProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const reducedMotion = usePrefersReducedMotion();
-  const [display, setDisplay] = useState<string>(value);
+  const [display, setDisplay] = useState<string>(() =>
+    reducedMotion ? value : formatZeroStart(value)
+  );
 
   useEffect(() => {
     const el = ref.current;
@@ -303,39 +385,88 @@ export function CountUpMetric({ value, className = '' }: CountUpMetricProps) {
       return;
     }
 
-    // Only animate clear leading scalar metrics like "5+", "1000V", "300A".
-    // Codes like "IP20" stay static so we don't fake-count standard codes.
-    const match = value.match(/^(\d+)([+A-Za-z]*)$/);
+    const match = value.match(/^([^\d]*)(\d+)(.*)$/);
     if (!match) {
       setDisplay(value);
       return;
     }
 
-    const target = parseInt(match[1], 10);
-    const suffix = match[2] || '';
-    const counter = { n: 0 };
+    const [, prefix, digits, suffix] = match;
+    const target = parseInt(digits, 10);
+    const padLength = prefix ? digits.length : 0;
+    const durationMs = Math.max(400, duration * 1000);
+    const delayMs = Math.max(0, delay * 1000);
 
-    const ctx = gsap.context(() => {
-      gsap.to(counter, {
-        n: target,
-        duration: 1.1,
-        ease: 'power2.out',
-        scrollTrigger: {
-          trigger: el,
-          start: 'top 92%',
-          once: true,
-        },
-        onUpdate: () => {
-          setDisplay(`${Math.round(counter.n)}${suffix}`);
-        },
-        onComplete: () => {
-          setDisplay(value);
-        },
-      });
-    }, ref);
+    setDisplay(formatZeroStart(value));
 
-    return () => ctx.revert();
-  }, [value, reducedMotion]);
+    let rafId = 0;
+    let timeoutId = 0;
+    let started = false;
+    let cancelled = false;
+
+    const runAnimation = () => {
+      if (started || cancelled) return;
+      started = true;
+
+      const startTimer = () => {
+        if (cancelled) return;
+        const startTime = performance.now();
+
+        const step = (now: number) => {
+          if (cancelled) return;
+          const elapsed = now - startTime;
+          const progress = Math.min(1, elapsed / durationMs);
+          // Smooth quadratic ease-out keeps digits visibly climbing across the full duration
+          const eased = 1 - (1 - progress) * (1 - progress);
+          const current = Math.round(target * eased);
+          const numText =
+            padLength > 0 ? String(current).padStart(padLength, '0') : String(current);
+          setDisplay(`${prefix}${numText}${suffix}`);
+
+          if (progress < 1) {
+            rafId = window.requestAnimationFrame(step);
+          } else {
+            setDisplay(value);
+          }
+        };
+
+        rafId = window.requestAnimationFrame(step);
+      };
+
+      if (delayMs > 0) {
+        timeoutId = window.setTimeout(startTimer, delayMs);
+      } else {
+        startTimer();
+      }
+    };
+
+    if (typeof IntersectionObserver !== 'undefined') {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            observer.disconnect();
+            runAnimation();
+          }
+        },
+        { threshold: 0.15 }
+      );
+      observer.observe(el);
+
+      return () => {
+        cancelled = true;
+        observer.disconnect();
+        window.clearTimeout(timeoutId);
+        window.cancelAnimationFrame(rafId);
+      };
+    }
+
+    runAnimation();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [value, reducedMotion, delay, duration]);
 
   return (
     <span ref={ref} className={className}>
@@ -396,15 +527,15 @@ export function GlowCard({
   const surfaceStyles =
     variant === 'light'
       ? active
-        ? 'bg-white border-[#0F766E] shadow-[0_14px_34px_rgba(15,23,42,0.09)] ring-1 ring-[#0F766E]/20'
-        : 'bg-[#F8FAFC] border-slate-200 hover:border-[#0D9488]/55 hover:shadow-[0_14px_34px_rgba(15,23,42,0.08)]'
+        ? 'bg-white border-[#0F766E] shadow-[0_12px_30px_rgba(16,29,43,0.08)] ring-1 ring-[#0F766E]/20'
+        : 'bg-[#F8FAFC] border-[#DCE2E8] hover:border-[#0F766E]/55 hover:shadow-[0_12px_28px_rgba(16,29,43,0.07)]'
       : variant === 'dark'
       ? active
-        ? 'bg-[#151D26] border-[#0D9488]/65 shadow-[0_14px_36px_rgba(15,23,42,0.35)]'
-        : 'bg-[#151D26] border-slate-700 hover:border-[#0D9488]/50 hover:shadow-[0_16px_40px_rgba(15,23,42,0.38)]'
+        ? 'bg-[#101D2B] border-[#0D9488]/70 shadow-[0_16px_40px_rgba(16,29,43,0.38)]'
+        : 'bg-[#101D2B] border-[#243447] hover:border-[#0D9488]/60 hover:shadow-[0_18px_42px_rgba(16,29,43,0.42)]'
       : active
-      ? 'bg-white border-[#0F766E] shadow-[0_14px_34px_rgba(15,23,42,0.09)] ring-1 ring-[#0F766E]/20'
-      : 'bg-white border-slate-200 hover:border-[#0D9488]/55 hover:shadow-[0_14px_34px_rgba(15,23,42,0.08)]';
+      ? 'bg-white border-[#0F766E] shadow-[0_12px_30px_rgba(16,29,43,0.08)] ring-1 ring-[#0F766E]/20'
+      : 'bg-white border-[#DCE2E8] hover:border-[#0F766E]/55 hover:shadow-[0_12px_28px_rgba(16,29,43,0.07)]';
 
   const Tag = as;
 

@@ -29,7 +29,10 @@ interface AppContextValue {
   navigate: (to: RoutePath) => void;
   scrollToTarget: (target: string | number) => void;
   rfqItems: RfqItem[];
-  addToRfq: (item: Omit<RfqItem, 'quantity'> & { quantity?: number }) => void;
+  addToRfq: (
+    item: Omit<RfqItem, 'quantity'> & { quantity?: number },
+    options?: { openDrawer?: boolean }
+  ) => void;
   updateRfqQuantity: (id: string, quantity: number) => void;
   removeFromRfq: (id: string) => void;
   clearRfq: () => void;
@@ -49,6 +52,8 @@ const VALID_ROUTES: RoutePath[] = [
   '/screw-support',
   '/bolt-connection',
   '/nut-connection',
+  '/pcb-terminal-blocks',
+  '/pcb-connectors',
   '/quality',
   '/about',
   '/contact',
@@ -202,19 +207,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const addToRfq = useCallback((item: Omit<RfqItem, 'quantity'> & { quantity?: number }) => {
-    const qtyToAdd = item.quantity && item.quantity > 0 ? item.quantity : 100;
-    setRfqItems((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
-      if (existing) {
-        return prev.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + qtyToAdd } : i
-        );
+  const addToRfq = useCallback(
+    (
+      item: Omit<RfqItem, 'quantity'> & { quantity?: number },
+      options?: { openDrawer?: boolean }
+    ) => {
+      const qtyToAdd = item.quantity && item.quantity > 0 ? item.quantity : 100;
+      setRfqItems((prev) => {
+        const existing = prev.find((i) => i.id === item.id);
+        if (existing) {
+          return prev.map((i) =>
+            i.id === item.id ? { ...i, quantity: i.quantity + qtyToAdd } : i
+          );
+        }
+        return [...prev, { ...item, quantity: qtyToAdd }];
+      });
+      if (options?.openDrawer !== false) {
+        setIsDrawerOpen(true);
       }
-      return [...prev, { ...item, quantity: qtyToAdd }];
-    });
-    setIsDrawerOpen(true);
-  }, []);
+    },
+    []
+  );
 
   const updateRfqQuantity = useCallback((id: string, quantity: number) => {
     setRfqItems((prev) =>

@@ -62,19 +62,19 @@ export function Header() {
     <header
       className={`sticky top-0 z-40 transition-all duration-300 ${
         scrolled
-          ? 'border-b border-slate-200 bg-white/95 backdrop-blur-md shadow-[0_8px_24px_rgba(15,23,42,0.06)]'
-          : 'border-b border-slate-200/70 bg-[#F7F9FB]/85 backdrop-blur-sm'
+          ? 'border-b border-[#DCE2E8] bg-white/95 backdrop-blur-md shadow-[0_10px_28px_rgba(16,29,43,0.06)]'
+          : 'border-b border-[#DCE2E8]/80 bg-[#F5F7F9]/90 backdrop-blur-sm'
       }`}
     >
-      <div className="mx-auto flex h-14 max-w-[1280px] items-center justify-between gap-8 px-4 sm:px-6 lg:h-16">
+      <div className="mx-auto flex h-14 max-w-[1280px] items-center justify-between gap-8 px-4 sm:px-6 lg:h-[68px]">
         {/* Zone 1: Single-line Brand Wordmark */}
         <button
           type="button"
           onClick={() => handleNav('/')}
-          className="group flex items-center gap-2.5 text-left whitespace-nowrap shrink-0 cursor-pointer rounded"
+          className="group flex items-center gap-3 text-left whitespace-nowrap shrink-0 cursor-pointer rounded"
           aria-label="TermiCore Home"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white p-0.5 shadow-2xs transition-transform duration-300 group-hover:scale-105">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-[#DCE2E8] bg-white p-0.5 shadow-2xs transition-transform duration-300 group-hover:scale-105 group-hover:border-[#0F766E]/40">
             <img
               src={resolveAssetUrl(IMAGES.logo)}
               alt="TermiCore logo"
@@ -82,7 +82,7 @@ export function Header() {
               className="h-full w-full object-contain"
             />
           </span>
-          <span className="font-display text-lg font-bold tracking-tight text-[#0F172A]">
+          <span className="font-display text-lg font-extrabold tracking-tight text-[#101D2B]">
             TermiCore
           </span>
         </button>
@@ -142,10 +142,10 @@ export function Header() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -6, scale: 0.98 }}
                   transition={{ duration: 0.18, ease: INDUSTRIAL_EASE }}
-                  className="absolute left-0 top-full mt-3 w-84 rounded-lg border border-slate-200 bg-white p-2 shadow-[0_18px_45px_rgba(15,23,42,0.12)] origin-top-left"
+                  className="absolute left-0 top-full mt-3 w-88 rounded-lg border border-[#DCE2E8] bg-white p-2.5 shadow-[0_20px_50px_rgba(16,29,43,0.14)] origin-top-left"
                 >
-                  <div className="px-3 py-2 border-b border-slate-100 mb-1 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#64748B]">
+                  <div className="px-3 py-2 border-b border-[#EEF2F6] mb-1.5 flex items-center justify-between">
+                    <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[#657382]">
                       Connection Technologies
                     </span>
                     <button
@@ -165,12 +165,12 @@ export function Header() {
                           onClick={() => handleNav(cat.slug)}
                           className={`group w-full flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-left text-sm transition-colors cursor-pointer ${
                             route === cat.slug
-                              ? 'bg-[#EEF2F6] text-[#0F172A] font-semibold border border-[#0F766E]/25'
-                              : 'text-[#475569] hover:bg-[#F7F9FB] hover:text-[#0F172A] border border-transparent'
+                              ? 'bg-[#EEF2F6] text-[#101D2B] font-semibold border border-[#0F766E]/30'
+                              : 'text-[#475569] hover:bg-[#F5F7F9] hover:text-[#101D2B] border border-transparent'
                           }`}
                         >
                           <span className="truncate">{cat.title}</span>
-                          <span className="font-mono text-[11px] text-[#0F766E] shrink-0">
+                          <span className="font-mono text-[11px] font-semibold text-[#0F766E] shrink-0">
                             {cat.seriesCode}
                           </span>
                         </button>

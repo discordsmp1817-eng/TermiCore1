@@ -1,54 +1,74 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Public Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --color-alabaster: #F7F9FB;
+  --color-alabaster: #F5F7F9;
   --color-mist: #EEF2F6;
   --color-card: #FFFFFF;
-  --color-carbon: #0F172A;
+  --color-carbon: #101D2B;
+  --color-graphite: #202B36;
   --color-slate-ink: #475569;
-  --color-steel: #64748B;
+  --color-steel: #657382;
+  --color-silver: #DCE2E8;
   --color-teal-accent: #0F766E;
   --color-teal-bright: #0D9488;
 }
 
 :root {
-  --bg-primary: #F7F9FB;
+  --bg-primary: #F5F7F9;
   --bg-secondary: #EEF2F6;
   --bg-elevated: #FFFFFF;
-  --text-primary: #0F172A;
+  --text-primary: #101D2B;
   --text-secondary: #475569;
   --accent-primary: #0F766E;
   --accent-hover: #0D9488;
-  --steel-grey: #64748B;
-  --border-subtle: rgba(15, 23, 42, 0.11);
-  --border-accent-hover: rgba(13, 148, 136, 0.42);
+  --steel-grey: #657382;
+  --border-subtle: #DCE2E8;
+  --border-accent-hover: rgba(15, 118, 110, 0.45);
 }
 
 @layer base {
   html {
     font-family: var(--font-sans);
-    color: #0F172A;
-    background-color: #F7F9FB;
+    color: #101D2B;
+    background-color: #F5F7F9;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
 
   body {
-    background-color: #F7F9FB;
-    color: #0F172A;
+    background-color: #F5F7F9;
+    color: #101D2B;
     overflow-x: clip;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+    letter-spacing: -0.02em;
   }
 
   *:focus-visible {
     outline: 2px solid #0F766E;
     outline-offset: 2px;
   }
+}
+
+/* Precision architectural drafting grid for industrial hero & section banners */
+.bg-engineering-grid {
+  background-image:
+    linear-gradient(to right, rgba(16, 29, 43, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(16, 29, 43, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.bg-engineering-grid-dark {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
 html.lenis,
