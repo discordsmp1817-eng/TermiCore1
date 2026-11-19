@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { PRODUCT_CATEGORIES, ProductCategory } from '../data/termicoreData';
+import { PRODUCT_CATEGORIES, ProductCategory, resolveAssetUrl } from '../data/termicoreData';
 import { useApp } from '../context/AppContext';
 import { EngineeringImage } from './EngineeringImage';
 import { SpecTable } from './SpecTable';
@@ -52,6 +52,7 @@ const BEST_FOR_LABELS: Record<string, string> = {
   'nut-connection': 'Splitting 1 main incoming cable into 2–8 branch circuits',
   'pcb-terminal-blocks': 'Direct-solder screw, lever & THR PCB clamps up to 232 A / 1000 V (2.54–15 mm)',
   'pcb-connectors': 'Two-piece pluggable PCB headers, THR sockets & locking plugs up to 125 A / 1000 V',
+  'barrier-terminal-blocks': 'Single-row, bi-level, pluggable & panel-mount screw barrier strips up to 85 A / 600 V',
 };
 
 function matchesNeed(cat: ProductCategory, need: NeedFilter): boolean {
@@ -60,7 +61,8 @@ function matchesNeed(cat: ProductCategory, need: NeedFilter): boolean {
       return (
         cat.id === 'spring-cage' ||
         cat.id === 'screw-connection' ||
-        cat.id === 'screw-support'
+        cat.id === 'screw-support' ||
+        cat.id === 'barrier-terminal-blocks'
       );
     case 'vibration':
       return (
@@ -69,7 +71,11 @@ function matchesNeed(cat: ProductCategory, need: NeedFilter): boolean {
         cat.id === 'pcb-connectors'
       );
     case 'pcb':
-      return cat.id === 'pcb-terminal-blocks' || cat.id === 'pcb-connectors';
+      return (
+        cat.id === 'pcb-terminal-blocks' ||
+        cat.id === 'pcb-connectors' ||
+        cat.id === 'barrier-terminal-blocks'
+      );
     case 'test-disconnect':
       return cat.skus.some(
         (s) =>
@@ -382,7 +388,7 @@ export function ProductCatalogSection({
                     as="article"
                     variant="elevated"
                     active
-                    className="group w-full"
+                    className="group w-full focus-within:ring-2 focus-within:ring-[#0F766E]/25"
                   >
                     <div className="p-6 flex flex-col flex-1">
                       <div className="flex items-center justify-between gap-2 text-xs font-medium text-[#64748B]">
@@ -401,8 +407,17 @@ export function ProductCatalogSection({
                         />
                       </div>
 
-                      <h3 className="mt-5 font-display text-xl font-bold tracking-tight text-[#0F172A]">
-                        {expandedCategory.title}
+                      <h3 className="mt-5 font-display text-xl font-bold tracking-tight text-[#0F172A] group-hover:text-[#0F766E] transition-colors">
+                        <a
+                          href={resolveAssetUrl(expandedCategory.slug)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate(expandedCategory.slug);
+                          }}
+                          className="focus:outline-none after:absolute after:inset-0 after:z-10 after:content-['']"
+                        >
+                          {expandedCategory.title}
+                        </a>
                       </h3>
                       <p className="mt-2 text-sm leading-relaxed text-[#475569]">
                         {BEST_FOR_LABELS[expandedCategory.id] || expandedCategory.tagline}
@@ -429,7 +444,7 @@ export function ProductCatalogSection({
                         </div>
                       </dl>
 
-                      <div className="mt-auto pt-5 flex flex-wrap items-center gap-2.5">
+                      <div className="relative z-20 mt-auto pt-5 flex flex-wrap items-center gap-2.5">
                         <button
                           type="button"
                           onClick={() => navigate(expandedCategory.slug)}
@@ -567,7 +582,7 @@ export function ProductCatalogSection({
                       <GlowCard
                         as="article"
                         variant="light"
-                        className="group w-full bg-[#F5F7F9] hover:-translate-y-1"
+                        className="group w-full bg-[#F5F7F9] hover:-translate-y-1 focus-within:border-[#0F766E] focus-within:ring-2 focus-within:ring-[#0F766E]/20"
                       >
                         <div className="p-6 flex flex-col flex-1">
                           <div className="flex items-center justify-between gap-2 text-xs font-medium text-[#657382]">
@@ -588,8 +603,17 @@ export function ProductCatalogSection({
                             />
                           </div>
 
-                          <h3 className="mt-5 font-display text-xl font-bold tracking-tight text-[#101D2B]">
-                            {cat.title}
+                          <h3 className="mt-5 font-display text-xl font-bold tracking-tight text-[#101D2B] group-hover:text-[#0F766E] transition-colors">
+                            <a
+                              href={resolveAssetUrl(cat.slug)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                navigate(cat.slug);
+                              }}
+                              className="focus:outline-none after:absolute after:inset-0 after:z-10 after:content-['']"
+                            >
+                              {cat.title}
+                            </a>
                           </h3>
                           <p className="mt-1.5 text-sm leading-relaxed text-[#475569]">
                             {BEST_FOR_LABELS[cat.id] || cat.tagline}
@@ -616,7 +640,7 @@ export function ProductCatalogSection({
                             </div>
                           </dl>
 
-                          <div className="mt-auto pt-5 flex flex-wrap items-center gap-2">
+                          <div className="relative z-20 mt-auto pt-5 flex flex-wrap items-center gap-2">
                             <button
                               type="button"
                               onClick={() => handleToggleSpecs(cat.id)}

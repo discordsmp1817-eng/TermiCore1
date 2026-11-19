@@ -1,10 +1,24 @@
-import { useState, useMemo } from 'react';
-import { ArrowLeft, ArrowRight, ChevronDown, CheckCircle2, Plus } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronDown,
+  CheckCircle2,
+  Plus,
+  LayoutGrid,
+  List,
+} from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ProductCategory, ACCESSORIES } from '../data/termicoreData';
 import { useApp } from '../context/AppContext';
 import { EngineeringImage } from '../components/EngineeringImage';
 import { SpecTable } from '../components/SpecTable';
+import {
+  filterCategorySkus,
+  getCategoryFilterOptions,
+  PitchBand,
+  ProcessFilter,
+} from '../utils/categoryFilters';
 import {
   EngineeringRule,
   GlowCard,
@@ -18,9 +32,6 @@ import {
 interface CategoryDetailPageProps {
   category: ProductCategory;
 }
-
-type PitchBand = 'All' | 'fine' | 'standard' | 'power';
-type ProcessFilter = 'All' | 'tht' | 'thr' | 'plug';
 
 const PCB_SELECTION_PARAMETERS = [
   {
@@ -45,53 +56,74 @@ const PCB_SELECTION_PARAMETERS = [
   },
 ];
 
-function getPitchBand(pitch?: string): PitchBand {
-  if (!pitch) return 'standard';
-  const num = parseFloat(pitch);
-  if (Number.isNaN(num)) return 'standard';
-  if (num < 4.5) return 'fine';
-  if (num < 7.0) return 'standard';
-  return 'power';
-}
-
-function matchesProcess(mounting: string, process: ProcessFilter): boolean {
-  const m = mounting.toLowerCase();
-  if (process === 'thr') return m.includes('thr') || m.includes('reflow');
-  if (process === 'tht') return m.includes('wave') || m.includes('tht') || m.includes('solder');
-  if (process === 'plug') return m.includes('plug') || m.includes('panel');
-  return true;
-}
-
 export function CategoryDetailPage({ category }: CategoryDetailPageProps) {
-  const { navigate, addToRfq } = useApp();
+  const { navigate, addToRfq, navFilter } = useApp();
   const [typeFilter, setTypeFilter] = useState<string>('All');
+  const [wireRangeFilter, setWireRangeFilter] = useState<string>('All');
+  const [voltageFilter, setVoltageFilter] = useState<string>('All');
   const [pitchFilter, setPitchFilter] = useState<PitchBand>('All');
   const [processFilter, setProcessFilter] = useState<ProcessFilter>('All');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const isPcbCategory =
     category.id === 'pcb-terminal-blocks' || category.id === 'pcb-connectors';
 
-  const connectionTypes = useMemo(() => {
-    const unique = Array.from(new Set(category.skus.map((s) => s.connectionType)));
-    return ['All', ...unique];
-  }, [category.skus]);
+  const filterOptions = useMemo(
+    () => getCategoryFilterOptions(category.skus),
+    [category.skus]
+  );
+
+  useEffect(() => {
+    if (navFilter) {
+      const nextType =
+        navFilter.typeFilter && filterOptions.connectionTypes.includes(navFilter.typeFilter)
+          ? navFilter.typeFilter
+          : 'All';
+      setTypeFilter(nextType);
+      setWireRangeFilter('All');
+      setVoltageFilter('All');
+      setPitchFilter(navFilter.pitchFilter ?? 'All');
+      setProcessFilter(navFilter.processFilter ?? 'All');
+    } else {
+      setTypeFilter('All');
+      setWireRangeFilter('All');
+      setVoltageFilter('All');
+      setPitchFilter('All');
+      setProcessFilter('All');
+    }
+  }, [category.id, navFilter, filterOptions.connectionTypes]);
 
   const filteredSkus = useMemo(() => {
-    return category.skus.filter((s) => {
-      if (typeFilter !== 'All' && s.connectionType !== typeFilter) return false;
-      if (isPcbCategory && pitchFilter !== 'All' && getPitchBand(s.widthOrPitch) !== pitchFilter) {
-        return false;
-      }
-      if (isPcbCategory && processFilter !== 'All' && !matchesProcess(s.mounting, processFilter)) {
-        return false;
-      }
-      return true;
+    return filterCategorySkus(category.skus, {
+      typeFilter,
+      wireRangeFilter,
+      voltageFilter,
+      pitchFilter,
+      processFilter,
+      isPcbCategory,
     });
-  }, [category.skus, typeFilter, pitchFilter, processFilter, isPcbCategory]);
+  }, [
+    category.skus,
+    typeFilter,
+    wireRangeFilter,
+    voltageFilter,
+    pitchFilter,
+    processFilter,
+    isPcbCategory,
+  ]);
 
-  const resetPcbFilters = () => {
+  const hasActiveFilters =
+    typeFilter !== 'All' ||
+    wireRangeFilter !== 'All' ||
+    voltageFilter !== 'All' ||
+    pitchFilter !== 'All' ||
+    processFilter !== 'All';
+
+  const resetAllFilters = () => {
     setTypeFilter('All');
+    setWireRangeFilter('All');
+    setVoltageFilter('All');
     setPitchFilter('All');
     setProcessFilter('All');
   };
@@ -227,7 +259,7 @@ export function CategoryDetailPage({ category }: CategoryDetailPageProps) {
       {/* Full Technical Specifications & Interactive Type Filter */}
       <section className="bg-[#EEF2F6] border-b border-[#DCE2E8] px-4 sm:px-6 py-14 lg:py-20">
         <div className="mx-auto max-w-[1280px] rounded-xl border border-[#DCE2E8] bg-white p-5 sm:p-8 lg:p-10 shadow-[0_14px_40px_rgba(16,29,43,0.05)]">
-          <RevealBlock className="flex flex-col gap-5 mb-8">
+          <RevealBlock className="flex flex-col gap-5 mb-7">
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
               <div>
                 <p className="font-mono text-xs font-semibold tracking-wide text-[#0F766E]">
@@ -238,99 +270,119 @@ export function CategoryDetailPage({ category }: CategoryDetailPageProps) {
                 </h2>
               </div>
 
-              {isPcbCategory && (typeFilter !== 'All' || pitchFilter !== 'All' || processFilter !== 'All') && (
-                <button
-                  type="button"
-                  onClick={resetPcbFilters}
-                  className="self-start lg:self-auto text-xs font-semibold text-[#0F766E] hover:text-[#0D9488] transition-colors cursor-pointer"
-                >
-                  Reset Selection Filters
-                </button>
+              {hasActiveFilters && (
+                <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
+                  {processFilter !== 'All' && (
+                    <span className="rounded border border-[#0F766E]/25 bg-[#0F766E]/8 px-2.5 py-1 font-mono text-[11px] font-semibold text-[#0F766E]">
+                      Process:{' '}
+                      {processFilter === 'thr'
+                        ? 'Reflow (THR)'
+                        : processFilter === 'tht'
+                        ? 'Wave (THT)'
+                        : 'Plug / Panel'}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={resetAllFilters}
+                    className="text-xs font-semibold text-[#0F766E] hover:text-[#0D9488] transition-colors cursor-pointer"
+                  >
+                    Reset Selection Filters
+                  </button>
+                </div>
               )}
             </div>
 
-            {connectionTypes.length > 2 && (
-              <div className="flex flex-wrap gap-1.5 rounded-lg border border-slate-200 bg-[#F7F9FB] p-1.5">
-                {connectionTypes.map((type) => {
-                  const active = typeFilter === type;
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setTypeFilter(type)}
-                      className={`relative rounded-md px-3 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                        active
-                          ? 'text-white'
-                          : 'text-[#475569] hover:bg-white hover:text-[#0F172A]'
-                      }`}
-                    >
-                      {active && (
-                        <motion.span
-                          layoutId={`categoryTypeFilter-${category.id}`}
-                          transition={{ type: 'spring', stiffness: 460, damping: 34 }}
-                          className="absolute inset-0 rounded-md bg-[#0F766E]"
-                        />
-                      )}
-                      <span className="relative z-10">{type}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {isPcbCategory && (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 border-t border-slate-100 pt-4">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="mr-1 text-xs font-semibold text-[#64748B]">Pitch:</span>
-                  {(
-                    [
-                      { id: 'All', label: 'All Pitches' },
-                      { id: 'fine', label: 'Fine (2.54–3.81 mm)' },
-                      { id: 'standard', label: 'Standard (5.0–5.08 mm)' },
-                      { id: 'power', label: 'Power (7.62–15 mm)' },
-                    ] as { id: PitchBand; label: string }[]
-                  ).map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setPitchFilter(opt.id)}
-                      className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer border ${
-                        pitchFilter === opt.id
-                          ? 'border-[#0F766E] bg-[#0F766E]/10 text-[#0F766E]'
-                          : 'border-slate-200 bg-white text-[#475569] hover:border-slate-300 hover:text-[#0F172A]'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
+            {/* Horizontal 3-Select Filter Bar + Grid/Table View Switcher */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 flex-1 md:max-w-[780px]">
+                <div className="relative">
+                  <select
+                    aria-label="Filter by category"
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value)}
+                    className="w-full h-10 appearance-none rounded-md border border-[#DCE2E8] bg-white pl-3.5 pr-9 text-xs sm:text-[13px] font-medium text-[#334155] shadow-[0_1px_2px_rgba(16,29,43,0.03)] transition-colors hover:border-[#94A3B8] focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/15 cursor-pointer"
+                  >
+                    <option value="All">- Category -</option>
+                    {filterOptions.connectionTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#475569]" />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
-                  <span className="mr-1 text-xs font-semibold text-[#64748B]">Process:</span>
-                  {(
-                    [
-                      { id: 'All', label: 'All' },
-                      { id: 'tht', label: 'Wave (THT)' },
-                      { id: 'thr', label: 'Reflow (THR)' },
-                      { id: 'plug', label: 'Plug / Panel' },
-                    ] as { id: ProcessFilter; label: string }[]
-                  ).map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setProcessFilter(opt.id)}
-                      className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer border ${
-                        processFilter === opt.id
-                          ? 'border-[#0F766E] bg-[#0F766E]/10 text-[#0F766E]'
-                          : 'border-slate-200 bg-white text-[#475569] hover:border-slate-300 hover:text-[#0F172A]'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
+                <div className="relative">
+                  <select
+                    aria-label="Filter by conductor cross section"
+                    value={wireRangeFilter}
+                    onChange={(e) => setWireRangeFilter(e.target.value)}
+                    className="w-full h-10 appearance-none rounded-md border border-[#DCE2E8] bg-white pl-3.5 pr-9 text-xs sm:text-[13px] font-medium text-[#334155] shadow-[0_1px_2px_rgba(16,29,43,0.03)] transition-colors hover:border-[#94A3B8] focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/15 cursor-pointer"
+                  >
+                    <option value="All">- Conductor cross section -</option>
+                    {filterOptions.wireRanges.map((range) => (
+                      <option key={range} value={range}>
+                        {range}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#475569]" />
+                </div>
+
+                <div className="relative">
+                  <select
+                    aria-label="Filter by voltage rating"
+                    value={voltageFilter}
+                    onChange={(e) => setVoltageFilter(e.target.value)}
+                    className="w-full h-10 appearance-none rounded-md border border-[#DCE2E8] bg-white pl-3.5 pr-9 text-xs sm:text-[13px] font-medium text-[#334155] shadow-[0_1px_2px_rgba(16,29,43,0.03)] transition-colors hover:border-[#94A3B8] focus:border-[#0F766E] focus:outline-none focus:ring-2 focus:ring-[#0F766E]/15 cursor-pointer"
+                  >
+                    <option value="All">- Voltage Rating -</option>
+                    {filterOptions.voltages.map((volt) => (
+                      <option key={volt} value={volt}>
+                        {volt}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#475569]" />
                 </div>
               </div>
-            )}
+
+              <div
+                role="group"
+                aria-label="Specification display mode"
+                className="flex items-center gap-1.5 self-end md:self-auto shrink-0"
+              >
+                <button
+                  type="button"
+                  onClick={() => setViewMode('cards')}
+                  aria-label="Grid view"
+                  aria-pressed={viewMode === 'cards'}
+                  title="Grid view"
+                  className={`h-10 w-10 inline-flex items-center justify-center rounded-md border transition-colors cursor-pointer ${
+                    viewMode === 'cards'
+                      ? 'border-[#0F766E] bg-[#0F766E] text-white shadow-2xs hover:bg-[#0D9488]'
+                      : 'border-[#DCE2E8] bg-white text-[#0F766E] hover:border-[#0F766E]/45 hover:bg-[#F5F7F9]'
+                  }`}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('table')}
+                  aria-label="Table view"
+                  aria-pressed={viewMode === 'table'}
+                  title="Table view"
+                  className={`h-10 w-10 inline-flex items-center justify-center rounded-md border transition-colors cursor-pointer ${
+                    viewMode === 'table'
+                      ? 'border-[#0F766E] bg-[#0F766E] text-white shadow-2xs hover:bg-[#0D9488]'
+                      : 'border-[#DCE2E8] bg-white text-[#0F766E] hover:border-[#0F766E]/45 hover:bg-[#F5F7F9]'
+                  }`}
+                >
+                  <List className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
           </RevealBlock>
 
           {filteredSkus.length > 0 ? (
@@ -338,10 +390,15 @@ export function CategoryDetailPage({ category }: CategoryDetailPageProps) {
               skus={filteredSkus}
               categoryTitle={category.title}
               fallbackImage={category.image}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              hideToolbar
               torqueColumnLabel={
                 category.id === 'spring-cage'
                   ? 'Stripping Length'
-                  : category.id === 'screw-connection' || category.id === 'bolt-connection'
+                  : category.id === 'screw-connection' ||
+                    category.id === 'bolt-connection' ||
+                    category.id === 'barrier-terminal-blocks'
                   ? 'Torque / Spec'
                   : isPcbCategory
                   ? 'Pitch / Termination Spec'
@@ -351,11 +408,11 @@ export function CategoryDetailPage({ category }: CategoryDetailPageProps) {
           ) : (
             <div className="rounded-lg border border-slate-200 bg-[#F7F9FB] p-8 text-center">
               <p className="text-sm text-[#475569]">
-                No models match the active pitch and soldering process combination.
+                No models match the active category, cross section, and voltage filter combination.
               </p>
               <button
                 type="button"
-                onClick={resetPcbFilters}
+                onClick={resetAllFilters}
                 className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-[#0F766E] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0D9488] transition-colors cursor-pointer"
               >
                 <span>Show All {category.skus.length} Models</span>

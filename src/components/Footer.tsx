@@ -1,20 +1,30 @@
-import { Mail, Phone, MapPin, Linkedin, X } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock, ArrowRight, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { CONTACT_INFO, IMAGES, PRODUCT_CATEGORIES, RoutePath, resolveAssetUrl } from '../data/termicoreData';
-import { useApp } from '../context/AppContext';
+import {
+  CONTACT_INFO,
+  IMAGES,
+  PRODUCT_NAV_GROUPS,
+  RoutePath,
+  resolveAssetUrl,
+} from '../data/termicoreData';
+import { NavigationFilter, useApp } from '../context/AppContext';
 import { INDUSTRIAL_EASE } from './MotionPrimitives';
 
 export function Footer() {
   const { navigate, legalModal, setLegalModal } = useApp();
 
-  const handleLink = (to: RoutePath) => {
-    navigate(to);
+  const handleLink = (to: RoutePath, filter?: NavigationFilter) => {
+    navigate(to, filter);
   };
+
+  const dinGroup = PRODUCT_NAV_GROUPS.find((g) => g.id === 'din-rail');
+  const pcbGroup = PRODUCT_NAV_GROUPS.find((g) => g.id === 'pcb');
+  const barrierGroup = PRODUCT_NAV_GROUPS.find((g) => g.id === 'barrier');
 
   return (
     <footer className="bg-[#101D2B] text-[#CBD5E1] border-t border-[#243447]">
       <div className="mx-auto max-w-[1280px] px-4 sm:px-6 py-14 lg:py-16">
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-9 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-[1.22fr_0.65fr_1.12fr_1.15fr_1.18fr_1.12fr] xl:gap-5">
           {/* Brand Column */}
           <div>
             <button
@@ -34,27 +44,31 @@ export function Footer() {
                 TermiCore
               </span>
             </button>
-            <p className="mt-4 text-sm leading-relaxed text-[#94A3B8]">
-              Delivering precision terminal block connectors for connected electrical and industrial automation solutions worldwide.
+
+            <p className="mt-4 text-[13px] leading-relaxed text-[#94A3B8] max-w-xs">
+              Precision DIN rail, PCB, and barrier terminal block systems for industrial automation, switchgear, and power distribution.
             </p>
-            <div className="mt-5 flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => handleLink('/contact')}
-                aria-label="Connect with TermiCore Sales"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#243447] bg-[#162435] text-[#CBD5E1] hover:border-[#2DD4BF] hover:text-[#2DD4BF] transition-colors cursor-pointer"
-              >
-                <Linkedin className="h-4 w-4" />
-              </button>
-            </div>
+
+            <p className="mt-3.5 font-mono text-[10.5px] tracking-tight text-[#2DD4BF] whitespace-nowrap">
+              UL 1059 · IEC 60947-7-1 · ISO 9001
+            </p>
+
+            <button
+              type="button"
+              onClick={() => handleLink('/quote')}
+              className="mt-5 inline-flex items-center gap-2 rounded-lg bg-[#0F766E] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#0D9488] transition-colors whitespace-nowrap shrink-0 cursor-pointer min-h-[40px]"
+            >
+              <span>Request Factory Quote</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
           </div>
 
-          {/* Quick Links */}
+          {/* Navigation Links */}
           <div>
-            <h3 className="font-display text-sm font-bold text-white tracking-wide">
-              Quick Links
+            <h3 className="font-display text-sm font-bold text-white tracking-wide whitespace-nowrap">
+              Company
             </h3>
-            <ul className="mt-4 space-y-2.5 text-sm">
+            <ul className="mt-4 space-y-2.5 text-[13px]">
               {[
                 { label: 'Home', path: '/' as RoutePath },
                 { label: 'All Products', path: '/products' as RoutePath },
@@ -67,7 +81,7 @@ export function Footer() {
                   <button
                     type="button"
                     onClick={() => handleLink(item.path)}
-                    className="text-[#CBD5E1] hover:text-[#2DD4BF] transition-colors cursor-pointer"
+                    className="text-left text-[#CBD5E1] hover:text-[#2DD4BF] transition-colors whitespace-nowrap cursor-pointer"
                   >
                     {item.label}
                   </button>
@@ -76,32 +90,78 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Our Products */}
-          <div>
-            <h3 className="font-display text-sm font-bold text-white tracking-wide">
-              Our Products
-            </h3>
-            <ul className="mt-4 space-y-2.5 text-sm">
-              {PRODUCT_CATEGORIES.map((cat) => (
-                <li key={cat.id}>
-                  <button
-                    type="button"
-                    onClick={() => handleLink(cat.slug)}
-                    className="text-left text-[#CBD5E1] hover:text-[#2DD4BF] transition-colors cursor-pointer"
-                  >
-                    {cat.title}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* DIN Rail Terminal Blocks (Separate Div) */}
+          {dinGroup && (
+            <div>
+              <h3 className="font-display text-sm font-bold text-white tracking-wide whitespace-nowrap">
+                {dinGroup.title}
+              </h3>
+              <ul className="mt-4 space-y-2.5 text-[13px]">
+                {dinGroup.items.map((item) => (
+                  <li key={item.label}>
+                    <button
+                      type="button"
+                      onClick={() => handleLink(item.route, item.filter)}
+                      className="text-left leading-snug text-[#CBD5E1] hover:text-[#2DD4BF] transition-colors cursor-pointer"
+                    >
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* PCB Terminal Blocks (Separate Div) */}
+          {pcbGroup && (
+            <div>
+              <h3 className="font-display text-sm font-bold text-white tracking-wide whitespace-nowrap">
+                {pcbGroup.title}
+              </h3>
+              <ul className="mt-4 space-y-2.5 text-[13px]">
+                {pcbGroup.items.map((item) => (
+                  <li key={item.label}>
+                    <button
+                      type="button"
+                      onClick={() => handleLink(item.route, item.filter)}
+                      className="text-left leading-snug text-[#CBD5E1] hover:text-[#2DD4BF] transition-colors cursor-pointer"
+                    >
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Barrier Terminal Blocks (Separate Div) */}
+          {barrierGroup && (
+            <div>
+              <h3 className="font-display text-sm font-bold text-white tracking-wide whitespace-nowrap">
+                {barrierGroup.title}
+              </h3>
+              <ul className="mt-4 space-y-2.5 text-[13px]">
+                {barrierGroup.items.map((item) => (
+                  <li key={item.label}>
+                    <button
+                      type="button"
+                      onClick={() => handleLink(item.route, item.filter)}
+                      className="text-left leading-snug text-[#CBD5E1] hover:text-[#2DD4BF] transition-colors cursor-pointer"
+                    >
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Contact Us */}
           <div>
-            <h3 className="font-display text-sm font-bold text-white tracking-wide">
-              Contact Us
+            <h3 className="font-display text-sm font-bold text-white tracking-wide whitespace-nowrap">
+              Engineering Desk
             </h3>
-            <ul className="mt-4 space-y-3 text-sm text-[#CBD5E1]">
+            <ul className="mt-4 space-y-3 text-[13px] text-[#CBD5E1]">
               <li className="flex items-start gap-2.5">
                 <Mail className="h-4 w-4 text-[#2DD4BF] shrink-0 mt-0.5" />
                 <a
@@ -115,10 +175,14 @@ export function Footer() {
                 <Phone className="h-4 w-4 text-[#2DD4BF] shrink-0 mt-0.5" />
                 <a
                   href={`tel:${CONTACT_INFO.phone.replace(/\s+/g, '')}`}
-                  className="hover:text-white transition-colors tabular-nums"
+                  className="hover:text-white transition-colors tabular-nums whitespace-nowrap"
                 >
                   {CONTACT_INFO.phone}
                 </a>
+              </li>
+              <li className="flex items-start gap-2.5">
+                <Clock className="h-4 w-4 text-[#2DD4BF] shrink-0 mt-0.5" />
+                <span className="tabular-nums whitespace-nowrap">Mon–Sat · 09:00–18:30</span>
               </li>
               <li className="flex items-start gap-2.5">
                 <MapPin className="h-4 w-4 text-[#2DD4BF] shrink-0 mt-0.5" />
@@ -130,26 +194,26 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="mt-12 border-t border-[#243447] pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-[#94A3B8]">
-          <div>&copy; {new Date().getFullYear()} TermiCore. All rights reserved.</div>
+          <div>&copy; {new Date().getFullYear()} TermiCore Industrial Connectivity. All rights reserved.</div>
           <div className="flex flex-wrap items-center gap-6">
             <button
               type="button"
               onClick={() => setLegalModal('privacy')}
-              className="hover:text-white transition-colors cursor-pointer"
+              className="py-1 hover:text-white transition-colors cursor-pointer"
             >
               Privacy Policy
             </button>
             <button
               type="button"
               onClick={() => setLegalModal('terms')}
-              className="hover:text-white transition-colors cursor-pointer"
+              className="py-1 hover:text-white transition-colors cursor-pointer"
             >
               Terms of Service
             </button>
             <button
               type="button"
               onClick={() => setLegalModal('sitemap')}
-              className="hover:text-white transition-colors cursor-pointer"
+              className="py-1 hover:text-white transition-colors cursor-pointer"
             >
               Sitemap
             </button>
@@ -232,6 +296,7 @@ export function Footer() {
                       { label: '1-Nut IC/OG (TNC/TNO)', path: '/nut-connection' as RoutePath },
                       { label: 'PCB Blocks (TPC/TPS)', path: '/pcb-terminal-blocks' as RoutePath },
                       { label: 'PCB Connectors (TPL/TPH)', path: '/pcb-connectors' as RoutePath },
+                      { label: 'Barrier Blocks (TBB/TBD)', path: '/barrier-terminal-blocks' as RoutePath },
                       { label: 'Quality & Standards', path: '/quality' as RoutePath },
                       { label: 'About TermiCore', path: '/about' as RoutePath },
                       { label: 'Contact Engineering', path: '/contact' as RoutePath },

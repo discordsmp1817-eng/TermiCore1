@@ -8,6 +8,7 @@ import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { AppProvider, useApp } from './context/AppContext';
 import { PRODUCT_CATEGORIES } from './data/termicoreData';
+import { findModelByRoute } from './utils/modelSpecifications';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { RfqDrawer } from './components/RfqDrawer';
@@ -15,6 +16,7 @@ import { INDUSTRIAL_EASE } from './components/MotionPrimitives';
 import { HomePage } from './pages/HomePage';
 import { ProductsPage } from './pages/ProductsPage';
 import { CategoryDetailPage } from './pages/CategoryDetailPage';
+import { ModelDetailPage } from './pages/ModelDetailPage';
 import { AccessoriesPage } from './pages/AccessoriesPage';
 import { QualityPage } from './pages/QualityPage';
 import { AboutPage } from './pages/AboutPage';
@@ -37,17 +39,32 @@ function RouteView() {
     const matchingCategory = PRODUCT_CATEGORIES.find((c) => c.slug === route);
     if (matchingCategory) {
       document.title = `${matchingCategory.title} (${matchingCategory.seriesCode}) | TermiCore`;
-    } else {
-      document.title =
-        STATIC_ROUTE_TITLES[route] ||
-        'TermiCore — Precision Terminal Block Connectors & Industrial Wiring Systems';
+      return;
     }
+    const matchedModel = findModelByRoute(route);
+    if (matchedModel) {
+      document.title = `${matchedModel.sku.model} — ${matchedModel.sku.name} | TermiCore`;
+      return;
+    }
+    document.title =
+      STATIC_ROUTE_TITLES[route] ||
+      'TermiCore — Precision Terminal Block Connectors & Industrial Wiring Systems';
   }, [route]);
 
   const renderPage = () => {
     const matchingCategory = PRODUCT_CATEGORIES.find((c) => c.slug === route);
     if (matchingCategory) {
       return <CategoryDetailPage category={matchingCategory} />;
+    }
+
+    const matchedModel = findModelByRoute(route);
+    if (matchedModel) {
+      return (
+        <ModelDetailPage
+          sku={matchedModel.sku}
+          category={matchedModel.category}
+        />
+      );
     }
 
     switch (route) {

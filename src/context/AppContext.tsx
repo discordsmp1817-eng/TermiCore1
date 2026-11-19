@@ -10,6 +10,7 @@ import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { RoutePath } from '../data/termicoreData';
+import { findModelByRoute } from '../utils/modelSpecifications';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -24,9 +25,18 @@ export interface RfqItem {
 
 export type LegalModalType = 'privacy' | 'terms' | 'sitemap' | null;
 
+export interface NavigationFilter {
+  typeFilter?: string;
+  pitchFilter?: 'All' | 'fine' | 'standard' | 'power';
+  processFilter?: 'All' | 'tht' | 'thr' | 'plug';
+  accessoryCategory?: string;
+}
+
 interface AppContextValue {
   route: RoutePath;
-  navigate: (to: RoutePath) => void;
+  navigate: (to: RoutePath, filter?: NavigationFilter) => void;
+  navFilter: (NavigationFilter & { nonce: number }) | null;
+  clearNavFilter: () => void;
   scrollToTarget: (target: string | number) => void;
   rfqItems: RfqItem[];
   addToRfq: (
@@ -54,6 +64,7 @@ const VALID_ROUTES: RoutePath[] = [
   '/nut-connection',
   '/pcb-terminal-blocks',
   '/pcb-connectors',
+  '/barrier-terminal-blocks',
   '/quality',
   '/about',
   '/contact',
@@ -86,6 +97,9 @@ function normalizePath(rawPath: string): RoutePath {
   if (VALID_ROUTES.includes(cleaned as RoutePath)) {
     return cleaned as RoutePath;
   }
+  if (cleaned.startsWith('/model/') && findModelByRoute(cleaned)) {
+    return cleaned as RoutePath;
+  }
   return '/';
 }
 
@@ -93,6 +107,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [route, setRoute] = useState<RoutePath>(() => normalizePath(window.location.pathname));
+  const [navFilter, setNavFilter] = useState<(NavigationFilter & { nonce: number }) | null>(null);
   const [rfqItems, setRfqItems] = useState<RfqItem[]>(() => {
     try {
       const saved = localStorage.getItem('termicore_rfq_items');
@@ -189,7 +204,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const navigate = useCallback((to: RoutePath) => {
+  const navigate = useCallback((to: RoutePath, filter?: NavigationFilter) => {
     const normalized = normalizePath(to);
     const basePrefix = getBasePrefix();
     const targetUrl = basePrefix
@@ -198,6 +213,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (window.location.pathname !== targetUrl) {
       window.history.pushState({}, '', targetUrl);
     }
+    setNavFilter(filter ? { ...filter, nonce: Date.now() } : null);
     setRoute(normalized);
     setIsDrawerOpen(false);
     if (lenisRef.current) {
@@ -205,6 +221,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } else {
       window.scrollTo({ top: 0, behavior: 'auto' });
     }
+  }, []);
+
+  const clearNavFilter = useCallback(() => {
+    setNavFilter(null);
   }, []);
 
   const addToRfq = useCallback(
@@ -250,6 +270,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       value={{
         route,
         navigate,
+        navFilter,
+        clearNavFilter,
         scrollToTarget,
         rfqItems,
         addToRfq,

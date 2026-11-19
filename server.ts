@@ -589,12 +589,21 @@ async function startServer() {
 
   // Vite dev middleware or production static serving
   if (!IS_PROD) {
-    const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
+    const viteReady = import('vite').then(({ createServer: createViteServer }) =>
+      createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      })
+    );
+    viteReady.catch((err) => {
+      console.error('Vite middleware initialization failed:', err);
     });
-    app.use(vite.middlewares);
+
+    app.use((req, res, next) => {
+      viteReady
+        .then((vite) => vite.middlewares(req, res, next))
+        .catch(next);
+    });
   } else {
     const distDir = path.resolve(__dirname, 'dist');
     const imagesDir = path.resolve(__dirname, 'src/assets/images');

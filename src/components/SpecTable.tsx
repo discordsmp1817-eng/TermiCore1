@@ -3,8 +3,9 @@ import { Plus, Check, LayoutGrid, Table2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ProductSku } from '../data/termicoreData';
+import { ProductSku, resolveAssetUrl } from '../data/termicoreData';
 import { useApp } from '../context/AppContext';
+import { getModelRoute } from '../utils/modelSpecifications';
 import { EngineeringImage } from './EngineeringImage';
 import { GlowCard, usePrefersReducedMotion } from './MotionPrimitives';
 
@@ -16,6 +17,9 @@ interface SpecTableProps {
   torqueColumnLabel?: string;
   columns?: 2 | 3;
   fallbackImage?: string;
+  viewMode?: 'cards' | 'table';
+  onViewModeChange?: (mode: 'cards' | 'table') => void;
+  hideToolbar?: boolean;
 }
 
 export function SpecTable({
@@ -24,9 +28,20 @@ export function SpecTable({
   torqueColumnLabel = 'Torque / Strip',
   columns = 3,
   fallbackImage,
+  viewMode: controlledViewMode,
+  onViewModeChange,
+  hideToolbar = false,
 }: SpecTableProps) {
-  const { rfqItems, addToRfq } = useApp();
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const { rfqItems, addToRfq, navigate } = useApp();
+  const [internalViewMode, setInternalViewMode] = useState<'cards' | 'table'>('cards');
+  const viewMode = controlledViewMode ?? internalViewMode;
+  const setViewMode = (mode: 'cards' | 'table') => {
+    if (onViewModeChange) {
+      onViewModeChange(mode);
+    } else {
+      setInternalViewMode(mode);
+    }
+  };
   const gridRef = useRef<HTMLDivElement>(null);
   const tbodyRef = useRef<HTMLTableSectionElement>(null);
   const reducedMotion = usePrefersReducedMotion();
@@ -96,56 +111,59 @@ export function SpecTable({
   return (
     <div className="space-y-4">
       {/* Compact View Switcher */}
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-xs font-medium text-[#64748B]">
-          {skus.length} individual {skus.length === 1 ? 'model' : 'models'}
-        </span>
-        <div
-          role="group"
-          aria-label="Specification display mode"
-          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-[#F7F9FB] p-1"
-        >
-          <button
-            type="button"
-            onClick={() => setViewMode('cards')}
-            aria-pressed={viewMode === 'cards'}
-            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
-              viewMode === 'cards'
-                ? 'bg-[#0F766E] text-white'
-                : 'text-[#475569] hover:text-[#0F172A]'
-            }`}
+      {!hideToolbar && (
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-medium text-[#64748B]">
+            {skus.length} individual {skus.length === 1 ? 'model' : 'models'}
+          </span>
+          <div
+            role="group"
+            aria-label="Specification display mode"
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-[#F7F9FB] p-1"
           >
-            <LayoutGrid className="h-3.5 w-3.5" />
-            <span>Model Cards</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('table')}
-            aria-pressed={viewMode === 'table'}
-            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
-              viewMode === 'table'
-                ? 'bg-[#0F766E] text-white'
-                : 'text-[#475569] hover:text-[#0F172A]'
-            }`}
-          >
-            <Table2 className="h-3.5 w-3.5" />
-            <span>Table</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('cards')}
+              aria-pressed={viewMode === 'cards'}
+              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                viewMode === 'cards'
+                  ? 'bg-[#0F766E] text-white'
+                  : 'text-[#475569] hover:text-[#0F172A]'
+              }`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span>Model Cards</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              aria-pressed={viewMode === 'table'}
+              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-[#0F766E] text-white'
+                  : 'text-[#475569] hover:text-[#0F172A]'
+              }`}
+            >
+              <Table2 className="h-3.5 w-3.5" />
+              <span>Table</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {viewMode === 'cards' ? (
         <div ref={gridRef} className={`grid gap-4 ${gridColsClass}`}>
           {skus.map((sku) => {
             const inRfq = rfqItems.some((item) => item.id === sku.model);
             const cardImage = sku.image || fallbackImage;
+            const modelRoute = getModelRoute(sku.model);
             return (
               <div key={sku.model} data-model-card className="flex">
                 <GlowCard
                   as="article"
                   variant="light"
                   active={inRfq}
-                  className="group w-full p-5 flex flex-col justify-between bg-[#F7F9FB]"
+                  className="group w-full p-5 flex flex-col justify-between bg-[#F7F9FB] hover:-translate-y-1 focus-within:border-[#0F766E] focus-within:ring-2 focus-within:ring-[#0F766E]/20"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2">
@@ -171,8 +189,17 @@ export function SpecTable({
                       </div>
                     )}
 
-                    <h4 className="mt-3.5 font-display text-base font-bold text-[#101D2B] leading-snug">
-                      {sku.name}
+                    <h4 className="mt-3.5 font-display text-base font-bold text-[#101D2B] leading-snug group-hover:text-[#0F766E] transition-colors">
+                      <a
+                        href={resolveAssetUrl(modelRoute)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigate(modelRoute);
+                        }}
+                        className="focus:outline-none after:absolute after:inset-0 after:z-10 after:content-['']"
+                      >
+                        {sku.name}
+                      </a>
                     </h4>
 
                     {/* Key Electrical & Mechanical Spec Grid */}
@@ -229,7 +256,7 @@ export function SpecTable({
                     )}
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-200/80">
+                  <div className="relative z-20 mt-4 pt-3 border-t border-slate-200/80">
                     <motion.button
                       type="button"
                       whileTap={{ scale: 0.97 }}
@@ -306,13 +333,23 @@ export function SpecTable({
             <tbody ref={tbodyRef} className="divide-y divide-[#DCE2E8]">
               {skus.map((sku) => {
                 const inRfq = rfqItems.some((item) => item.id === sku.model);
+                const modelRoute = getModelRoute(sku.model);
                 return (
                   <tr
                     key={sku.model}
                     className="group odd:bg-white even:bg-[#F5F7F9] hover:bg-[#EEF2F6]/80 transition-colors duration-150"
                   >
                     <td className="sticky left-0 z-10 bg-white group-even:bg-[#F5F7F9] group-hover:bg-[#EEF2F6] transition-colors px-3 py-3 font-mono text-xs font-bold text-[#0F766E] whitespace-nowrap border-r border-[#DCE2E8]">
-                      {sku.model}
+                      <a
+                        href={resolveAssetUrl(modelRoute)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigate(modelRoute);
+                        }}
+                        className="hover:underline focus:outline-none focus:underline"
+                      >
+                        {sku.model}
+                      </a>
                     </td>
                     <td className="px-3 py-3 text-xs font-medium text-[#101D2B] whitespace-nowrap">
                       {sku.connectionType}
